@@ -1,0 +1,4 @@
+aiohttp
+discord.py
+pydantic
+tweepy[async]
