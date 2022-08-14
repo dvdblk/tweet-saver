@@ -1,9 +1,4 @@
-# GitHub related
 .github/
 etc/
 README.md
 .env.example
-
-
-kubernetes/
-run.sh
