@@ -17,7 +17,7 @@ class TwitterClient(AsyncClient):
             id=id,
             tweet_fields=["entities", "attachments", "referenced_tweets", "created_at"],
             media_fields=["preview_image_url", "url"],
-            user_fields=["username", "name"],
+            user_fields=["username", "name", "profile_image_url"],
             expansions=["attachments.media_keys", "author_id"],
         )
 
@@ -27,13 +27,14 @@ class TwitterClient(AsyncClient):
         if users := tweet_data.includes.get("users"):
             tweet_username = users[0].username
             tweet_name = users[0].name
+            author_profile_image_url = users[0].profile_image_url
             tweet_url = f"https://twitter.com/{tweet_username}/status/{id}"
         else:
             tweet_url = f"https://twitter.com/twitter/statuses/{id}"
         tweet_created_at = tweet_data.data.get(
             "created_at", "1337-01-01 13:37:00+00:00"
         ).astimezone(ZoneInfo("Europe/Zurich")).strftime(
-            "%H:%M:%S • %d.%m.%Y",
+            "%H:%M:%S • %d/%m/%Y",
         )
         tweet_text = tweet_data.data["text"]
 
@@ -45,16 +46,22 @@ class TwitterClient(AsyncClient):
                     media_urls.append(url)
 
         tweet_type, reference_id = TweetType.NORMAL, None
-        if referenced_tweets := tweet_data.data.get("referenced_tweets"):
-            ref_tweet = referenced_tweets[0]
-            tweet_type = TweetType(ref_tweet.type)
-            reference_id = ref_tweet.id
+        try:
+            if referenced_tweets := tweet_data.data.get("referenced_tweets"):
+                ref_tweet = referenced_tweets[0]
+                tweet_type = TweetType(ref_tweet.type)
+                reference_id = ref_tweet.id
+            else:
+                tweet_type = TweetType.NORMAL
+        except ValueError:
+            tweet_type = TweetType.UNKNOWN
 
         return TweetData(
             id=id,
             text=tweet_text,
             username=tweet_username,
             name=tweet_name,
+            profile_image_url=author_profile_image_url,
             url=tweet_url,
             created_at=tweet_created_at,
             tweet_type=tweet_type,

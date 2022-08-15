@@ -56,6 +56,10 @@ class TweetStreamingClient(AsyncStreamingClient):
         log.info(f'Current filtered stream rule: "{self.stream_rule_str}"')
 
     async def on_tweet(self, tweet: Tweet) -> None:
+        """Get additional tweet data and send Embed to Discord.
+
+        Note: gets called by `AsyncStreamingClient` when a new tweet matches the StreamRule
+        """
         # Get TweetData
         tweet_data = await self.client.get_tweet_data(id=tweet.id)
 
@@ -69,45 +73,66 @@ class TweetStreamingClient(AsyncStreamingClient):
                 created_at=tweet_data.created_at,
                 username=tweet_data.username,
                 name=tweet_data.name,
+                author_image_url=tweet_data.profile_image_url,
                 media_urls=tweet_data.media_urls
             )
         elif tweet_data.tweet_type == TweetType.RETWEET:
             # Retweet
-            if ref_id := tweet_data.reference_id:
-                ref_tweet_data = await self.client.get_tweet_data(id=ref_id)
-                log.info(f"New retweet: {tweet_data.url}")
-                await self.discord.send_retweet_embed(
-                    url=tweet_data.url,
-                    created_at=tweet_data.created_at,
-                    username=tweet_data.username,
-                    name=tweet_data.name,
-                    rt_name=ref_tweet_data.name,
-                    rt_username=ref_tweet_data.username,
-                    rt_text=ref_tweet_data.text,
-                    rt_media_urls=ref_tweet_data.media_urls
-                )
-            else:
-                log.error(f"Retweet ({tweet_data.id}) didn't have a reference id.")
-                return
+            ref_tweet_data = await self.client.get_tweet_data(
+                id=tweet_data.reference_id
+            )
+            log.info(f"New retweet: {tweet_data.url}")
+            await self.discord.send_retweet_embed(
+                url=tweet_data.url,
+                created_at=tweet_data.created_at,
+                username=tweet_data.username,
+                name=tweet_data.name,
+                author_image_url=tweet_data.profile_image_url,
+                rt_name=ref_tweet_data.name,
+                rt_username=ref_tweet_data.username,
+                rt_text=ref_tweet_data.text,
+                rt_media_urls=ref_tweet_data.media_urls
+            )
         elif tweet_data.tweet_type == TweetType.QUOTE:
             # Quote tweet
-            if ref_id := tweet_data.reference_id:
-                ref_tweet_data = await self.client.get_tweet_data(id=ref_id)
-                log.info(f"New quote tweet: {tweet_data.url}")
-                await self.discord.send_quote_tweet_embed(
-                    url=tweet_data.url,
-                    text=tweet_data.text,
-                    created_at=tweet_data.created_at,
-                    username=tweet_data.username,
-                    name=tweet_data.name,
-                    media_urls=tweet_data.media_urls,
-                    rt_name=ref_tweet_data.name,
-                    rt_username=ref_tweet_data.username,
-                    rt_text=ref_tweet_data.text
-                )
-            else:
-                log.error(f"Quote tweet ({tweet_data.id}) didn't have a reference id.")
-                return
+            ref_tweet_data = await self.client.get_tweet_data(
+                id=tweet_data.reference_id
+            )
+            log.info(f"New quote tweet: {tweet_data.url}")
+            await self.discord.send_quote_tweet_embed(
+                url=tweet_data.url,
+                text=tweet_data.text,
+                created_at=tweet_data.created_at,
+                username=tweet_data.username,
+                name=tweet_data.name,
+                author_image_url=tweet_data.profile_image_url,
+                media_urls=tweet_data.media_urls,
+                rt_name=ref_tweet_data.name,
+                rt_username=ref_tweet_data.username,
+                rt_text=ref_tweet_data.text
+            )
+        elif tweet_data.tweet_type == TweetType.REPLY:
+            # Reply tweet
+            ref_tweet_data = await self.client.get_tweet_data(
+                id=tweet_data.reference_id
+            )
+            log.info(f"New reply tweet: {tweet_data.url}")
+            await self.discord.send_reply_tweet_embed(
+                url=tweet_data.url,
+                text=tweet_data.text,
+                created_at=tweet_data.created_at,
+                username=tweet_data.username,
+                name=tweet_data.name,
+                author_image_url=tweet_data.profile_image_url,
+                media_urls=tweet_data.media_urls,
+                rt_name=ref_tweet_data.name,
+                rt_username=ref_tweet_data.username,
+                rt_text=ref_tweet_data.text
+            )
+        elif tweet_data.tweet_type == TweetType.UNKNOWN:
+            # Unknown tweet
+            log.warning(f"Unknown tweet type: {tweet_data.url}")
+
 
     async def start_filtered_stream(self):
         """Apply rules and start listening for new tweets"""
