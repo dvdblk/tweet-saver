@@ -15,7 +15,7 @@
   </a>
 </p>
 
-This app allows you to filter the real-time stream of all public tweets and repost them to Discord. Just create your own [Stream Rule](https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule) and start the app!
+This app allows you to filter the real-time stream of all public tweets and send the matching ones to Discord. Just create your own [Stream Rule](https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule) and start the app.
 
 
 ## Run the app
@@ -40,5 +40,5 @@ You can pass these to `docker run` in an `.env` file with `--env-file <your-env-
 The app sends custom Discord Embeds for three types of tweets (regular, retweet and quote). Also supports images.
 
 <p align="center" width="100%">
-    <img width="20%" src="etc/embed_preview.png">
+    <img width="30%" src="etc/embed_preview.png">
 </p>
