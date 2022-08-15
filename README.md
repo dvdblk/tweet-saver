@@ -19,7 +19,7 @@ This app allows you to filter the real-time stream of all public tweets and send
 
 
 ## Run the app
-Easiest way to run this is via Docker:
+Easiest way to run this app is with Docker:
 
 ```
 $ docker run --env-file <your-env-file> dvdblk/tweet-saver:latest
@@ -37,7 +37,7 @@ To successfully run the app you need to pass these environment variables to the 
 You can pass these to `docker run` in an `.env` file with `--env-file <your-env-file>` or manually with `-e DISCORD_WEBHOOK_URL=...`.
 
 ## Custom Discord Embeds
-The app sends custom Discord Embeds for three types of tweets (regular, retweet and quote). Also supports images.
+The app sends custom Discord Embeds for four types of tweets (regular, retweet, quote and reply). Also supports images.
 
 <p align="center" width="100%">
     <img width="30%" src="etc/embed_preview.png">
