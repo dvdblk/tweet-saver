@@ -9,6 +9,9 @@ spec:
     matchLabels:
       app: tweet-saver
   template:
+    metadata:
+      labels:
+        app: tweet-saver
     spec:
       containers:
         - name: tweet-saver
@@ -16,4 +19,4 @@ spec:
           imagePullPolicy: IfNotPresent
           envFrom:
           - secretRef:
-            name: env-var-secret
+              name: env-var-secret
