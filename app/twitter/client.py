@@ -1,9 +1,8 @@
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from tweepy.asynchronous import AsyncClient
-from tweepy.client import Response
 
+from app.twitter import fmt_created_at
 from app.twitter.model import TweetData, TweetType
 
 
@@ -31,10 +30,10 @@ class TwitterClient(AsyncClient):
             tweet_url = f"https://twitter.com/{tweet_username}/status/{id}"
         else:
             tweet_url = f"https://twitter.com/twitter/statuses/{id}"
-        tweet_created_at = tweet_data.data.get(
-            "created_at", "1337-01-01 13:37:00+00:00"
-        ).astimezone(ZoneInfo("Europe/Zurich")).strftime(
-            "%H:%M:%S • %d/%m/%Y",
+        tweet_created_at = fmt_created_at(
+            tweet_data.data.get(
+                "created_at", "1337-01-01 13:37:00+00:00"
+            )
         )
         tweet_text = tweet_data.data["text"]
 

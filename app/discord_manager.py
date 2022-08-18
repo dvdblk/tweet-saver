@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from aiohttp import ClientSession
 from discord import (
@@ -10,7 +10,7 @@ from discord import (
 
 class DiscordManager:
     """Manage sending messages to a Discord channel"""
-    # URL to display in the footer of every Embed
+    # Default footer URL to display when profile picture is not available
     FOOTER_URL = "https://img.icons8.com/color/48/000000/twitter--v1.png"
 
     def __init__(self, webhook_url: str) -> None:
@@ -43,26 +43,37 @@ class DiscordManager:
 
         return embeds
 
+    async def send_deleted_tweet_embed(
+        self, text: str, created_at: str
+    ):
+        """Send embed of a deleted tweet (unknown tweet type) to Discord"""
+        embed = Embed(
+            color=5021419,
+            description=text
+        )
+        embed.set_footer(
+            text=created_at,
+            icon_url=self.FOOTER_URL
+        )
+
+        await self.discord.send(embeds=[embed])
+
     async def send_tweet_embed(
         self, url: str, text: str, created_at: str,
-        username: str, name: str, author_image_url: str,
+        username: str, name: str, author_image_url: Optional[str],
         media_urls: List[str] = []
     ) -> None:
         """Send embed of a normal tweet to Discord"""
         embeds = []
         embed = Embed(
-            color=3370953,
+            color=5021419,
             url=url,
-            description=text
-        )
-        embed.set_author(
-            name=f"{name} (@{username})",
-            url=url,
-            icon_url=author_image_url,
+            description=text,
+            title=f"{name} (@{username})"
         )
         embed.set_footer(
             text=created_at,
-            icon_url=self.FOOTER_URL
+            icon_url=author_image_url or self.FOOTER_URL
         )
         # Save first embed
         embeds.append(embed)
@@ -76,7 +87,7 @@ class DiscordManager:
 
     async def send_retweet_embed(
         self, url: str, created_at: str, username: str,
-        name: str, author_image_url: str,
+        name: str, author_image_url: Optional[str],
         rt_name: str, rt_username: str, rt_text: str,
         rt_media_urls: List[str] = []
     ) -> None:
@@ -85,19 +96,15 @@ class DiscordManager:
         embed = Embed(
             color=40473,
             url=url,
-        )
-        embed.set_author(
-            name=f"🔁 {name} (@{username}) retweeted",
-            url=url,
-            icon_url=author_image_url,
+            title=f"🔁 {name} (@{username}) retweeted"
         )
         embed.add_field(
             name=f"> {rt_name} (@{rt_username})",
-            value=f"> {rt_text}"
+            value=rt_text
         )
         embed.set_footer(
             text=created_at,
-            icon_url=self.FOOTER_URL
+            icon_url=author_image_url or self.FOOTER_URL
         )
         # Save first embed
         embeds.append(embed)
@@ -111,7 +118,7 @@ class DiscordManager:
 
     async def send_quote_tweet_embed(
         self, url: str, text: str, created_at: str, username: str,
-        name: str, author_image_url: str,
+        name: str, author_image_url: Optional[str],
         rt_name: str, rt_username: str, rt_text: str,
         media_urls: List[str] = []
     ) -> None:
@@ -119,20 +126,17 @@ class DiscordManager:
         embeds = []
         embed = Embed(
             color=11468877,
-            description=text
-        )
-        embed.set_author(
-            name=f"{name} (@{username})",
+            description=text,
             url=url,
-            icon_url=author_image_url,
+            title=f"{name} (@{username})"
         )
         embed.add_field(
             name=f"> {rt_name} (@{rt_username})",
-            value=f"> {rt_text}"
+            value=rt_text
         )
         embed.set_footer(
             text=created_at,
-            icon_url=self.FOOTER_URL
+            icon_url=author_image_url or self.FOOTER_URL
         )
         # Save first embed
         embeds.append(embed)
@@ -146,7 +150,7 @@ class DiscordManager:
 
     async def send_reply_tweet_embed(
         self, url: str, text: str, created_at: str, username: str,
-        name: str, author_image_url: str,
+        name: str, author_image_url: Optional[str],
         rt_name: str, rt_username: str, rt_text: str,
         media_urls: List[str] = []
     ) -> None:
@@ -154,20 +158,17 @@ class DiscordManager:
         embeds = []
         embed = Embed(
             color=57599,
-            description=text
-        )
-        embed.set_author(
-            name=f"↪️ {name} (@{username}) replied",
+            description=text,
             url=url,
-            icon_url=author_image_url,
+            title=f"↪️ {name} (@{username}) replied"
         )
         embed.add_field(
             name=f"> {rt_name} (@{rt_username})",
-            value=f"> {rt_text}"
+            value=rt_text
         )
         embed.set_footer(
             text=created_at,
-            icon_url=self.FOOTER_URL
+            icon_url=author_image_url or self.FOOTER_URL
         )
         # Save first embed
         embeds.append(embed)
