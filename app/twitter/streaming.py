@@ -3,6 +3,7 @@ from tweepy.asynchronous import AsyncStreamingClient
 
 from app import init_logger
 from app.discord_manager import DiscordManager
+from app.twitter import fmt_created_at, fmt_tweet_text
 from app.twitter.client import TwitterClient
 from app.twitter.model import TweetType
 
@@ -35,16 +36,15 @@ class TweetStreamingClient(AsyncStreamingClient):
 
         # Get previous rules
         resp = await self.get_rules()
-        previous_rules = resp.data
+        previous_rules = resp.data or []
 
         # Remove previous rules if needed
         if remove_previous_rules:
             # Don't remove the rule we're about to add
-            prev_rules_to_delete = filter(lambda r: r.value != stream_rule.value, previous_rules)
+            prev_rules_to_delete = list(filter(lambda r: r.value != stream_rule.value, previous_rules))
             previous_rule_ids = list(map(lambda x: x.id, prev_rules_to_delete))
-
             if previous_rule_ids:
-                log.info(f"Deleting rule(s) with ids: {previous_rule_ids}")
+                log.info(f"Deleting rule(s): {list(map(lambda r: r.value, prev_rules_to_delete))}")
                 # Remove irrelevant rules
                 await self.delete_rules(previous_rule_ids)
 
@@ -62,6 +62,16 @@ class TweetStreamingClient(AsyncStreamingClient):
         """
         # Get TweetData
         tweet_data = await self.client.get_tweet_data(id=tweet.id)
+        if tweet_data is None:
+            log.info(f"New (deleted) tweet: {tweet.id}")
+            await self.discord.send_deleted_tweet_embed(
+                text=fmt_tweet_text(
+                    tweet.text,
+                    use_blockquote=False
+                ),
+                created_at=fmt_created_at()
+            )
+            return
 
         # Send an embed based on tweet type
         if tweet_data.tweet_type == TweetType.NORMAL:
@@ -69,7 +79,7 @@ class TweetStreamingClient(AsyncStreamingClient):
             log.info(f"New tweet: {tweet_data.url}")
             await self.discord.send_tweet_embed(
                 url=tweet_data.url,
-                text=tweet_data.text,
+                text=fmt_tweet_text(tweet_data.text, use_blockquote=False),
                 created_at=tweet_data.created_at,
                 username=tweet_data.username,
                 name=tweet_data.name,
@@ -90,7 +100,7 @@ class TweetStreamingClient(AsyncStreamingClient):
                 author_image_url=tweet_data.profile_image_url,
                 rt_name=ref_tweet_data.name,
                 rt_username=ref_tweet_data.username,
-                rt_text=ref_tweet_data.text,
+                rt_text=fmt_tweet_text(ref_tweet_data.text),
                 rt_media_urls=ref_tweet_data.media_urls
             )
         elif tweet_data.tweet_type == TweetType.QUOTE:
@@ -101,7 +111,7 @@ class TweetStreamingClient(AsyncStreamingClient):
             log.info(f"New quote tweet: {tweet_data.url}")
             await self.discord.send_quote_tweet_embed(
                 url=tweet_data.url,
-                text=tweet_data.text,
+                text=fmt_tweet_text(tweet_data.text, use_blockquote=False),
                 created_at=tweet_data.created_at,
                 username=tweet_data.username,
                 name=tweet_data.name,
@@ -109,7 +119,7 @@ class TweetStreamingClient(AsyncStreamingClient):
                 media_urls=tweet_data.media_urls,
                 rt_name=ref_tweet_data.name,
                 rt_username=ref_tweet_data.username,
-                rt_text=ref_tweet_data.text
+                rt_text=fmt_tweet_text(ref_tweet_data.text)
             )
         elif tweet_data.tweet_type == TweetType.REPLY:
             # Reply tweet
@@ -119,7 +129,7 @@ class TweetStreamingClient(AsyncStreamingClient):
             log.info(f"New reply tweet: {tweet_data.url}")
             await self.discord.send_reply_tweet_embed(
                 url=tweet_data.url,
-                text=tweet_data.text,
+                text=fmt_tweet_text(tweet_data.text, use_blockquote=False),
                 created_at=tweet_data.created_at,
                 username=tweet_data.username,
                 name=tweet_data.name,
@@ -127,12 +137,21 @@ class TweetStreamingClient(AsyncStreamingClient):
                 media_urls=tweet_data.media_urls,
                 rt_name=ref_tweet_data.name,
                 rt_username=ref_tweet_data.username,
-                rt_text=ref_tweet_data.text
+                rt_text=fmt_tweet_text(ref_tweet_data.text)
             )
         elif tweet_data.tweet_type == TweetType.UNKNOWN:
             # Unknown tweet
             log.warning(f"Unknown tweet type: {tweet_data.url}")
 
+    async def on_connection_error(self):
+        """Called on stream timeout by `AsyncStream`"""
+        await super().on_connection_error()
+        # Disconnect from the stream
+        log.info("Disconnecting")
+        await self.disconnect()
+        log.info("Disconnected")
+        # Reconnect
+        await self.start_filtered_stream()
 
     async def start_filtered_stream(self):
         """Apply rules and start listening for new tweets"""

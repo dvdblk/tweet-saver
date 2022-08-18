@@ -24,7 +24,7 @@ class TweetData:
     # author's name
     name: str
     # author's profile image URL
-    profile_image_url: str
+    profile_image_url: Optional[str]
     # tweet URL
     url: str
     # Date of tweet creation in ISO format
@@ -36,7 +36,3 @@ class TweetData:
     reference_id: Optional[str]
     # list of images attached to a tweet
     media_urls: List[str]
-
-    def __post_init__(self):
-        if not self.profile_image_url:
-            self.profile_image_url = ""
