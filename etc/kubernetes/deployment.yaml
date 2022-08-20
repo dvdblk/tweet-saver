@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: tweet-saver
-          image: ghcr.io/dvdblk/tweet-saver:v1.1.1
+          image: ghcr.io/dvdblk/tweet-saver:v1.1.2
           imagePullPolicy: IfNotPresent
           envFrom:
           - secretRef:
