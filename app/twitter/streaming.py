@@ -63,8 +63,14 @@ class TweetStreamingClient(AsyncStreamingClient):
     async def on_response(self, response):
         """Get additional tweet data and send Embed to Discord.
 
-        Note: gets called by `AsyncStreamingClient` when a new tweet matches the StreamRule
+        Note:   gets called by `AsyncStreamingClient` when a new tweet matches the StreamRule. This
+                method is used instead of `on_tweet` because response contains additional request data args
+                unlike with `on_tweet`.
         """
+        if response.data is None:
+            # Skip sending when data is None
+            log.warning(f"Response data is None for response: {response}")
+            return
         # Get TweetData
         tweet_data = TweetData.parse_tweet_data(response)
         # Send an embed based on tweet type
